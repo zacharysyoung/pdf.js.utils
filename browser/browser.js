@@ -75,51 +75,43 @@ Node.prototype = {
     },
 };
 
-function createWalker(data, root) {
+const MAX_DEPTH = 10;
+
+function createWalker(data) {
     var pdf = new PDFDocument(null, data);
     pdf.parseStartXRef();
     pdf.parse();
     var xref = pdf.xref;
-    if (!root || root === 'trailer') {
-        root = xref.trailer;
-    } else {
-        var ref = new Ref(root.num, root.gen);
-        root = xref.fetch(ref);
-    }
+    var root = xref.trailer;
 
-    function addChildren(node, nodesToVisit) {
-        var children = node.children;
-        for (var i = children.length - 1; i >= 0; i--) {
-            nodesToVisit.push(children[i]);
+    var rootNode = new Node(root, 'Trailer', 0);
+
+    function walk(node, callDepth, nodePath) {
+        // Not sure about this, but I think I'm directing the walker to completely resolve referenced nodes
+        while (isRef(node.obj)) {
+            var fetched = xref.fetch(node.obj);
+            node = new Node(fetched, node.name, node.depth, node.obj);
+        }
+
+        nodePath += ' // ' + toText(node);
+
+        if (node.name === 'GPTS') {
+            console.log(nodePath);
+            return;
+        }
+
+        if (callDepth > MAX_DEPTH) {
+            return;
+        }
+
+        for (const childNode of node.children) {
+            walk(childNode, callDepth + 1, nodePath);
         }
     }
 
-    function walk(nodesToVisit, visit) {
-        while (nodesToVisit.length) {
-            var currentNode = nodesToVisit.pop();
-
-            if (currentNode.depth > 20) {
-                continue;
-            }
-
-            console.log('-'.repeat(currentNode.depth) + toText(currentNode));
-
-            if (isRef(currentNode.obj)) {
-                var fetched = xref.fetch(currentNode.obj);
-                currentNode = new Node(fetched, currentNode.name, currentNode.depth, currentNode.obj);
-            }
-            var visitChildren = visit(currentNode, function (currentNode, visit) {
-                walk(currentNode.children.reverse(), visit);
-            }.bind(null, currentNode));
-
-            if (visitChildren) {
-                addChildren(currentNode, nodesToVisit);
-            }
-        }
-    }
-
-    var node = [ new Node(root, 'Trailer', 0) ];
-    walk(node, ()=> true);
+    return {
+        start: () => walk(rootNode, 1, ''),
+    };
 }
 
 //
@@ -178,7 +170,8 @@ function go(data) {
         var split = hashParams.root.split(',');
         root = { num: split[0], gen: split[1] };
     }
-    createWalker(data, root);
+    var w = createWalker(data);
+    w.start();
     return;
 }
 
