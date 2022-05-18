@@ -104,7 +104,6 @@ function createWalker(data, root) {
 
             console.log('-'.repeat(currentNode.depth) + toText(currentNode));
 
-
             if (isRef(currentNode.obj)) {
                 var fetched = xref.fetch(currentNode.obj);
                 currentNode = new Node(fetched, currentNode.name, currentNode.depth, currentNode.obj);
