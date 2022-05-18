@@ -93,10 +93,11 @@ function createWalker(data) {
             node = new Node(fetched, node.name, node.depth, node.obj);
         }
 
-        nodePath += ' // ' + toText(node);
+        nodePath += ' '.repeat(node.depth) + ' - ' + toText(node) + '\n';
 
         if (node.name === 'GPTS') {
             console.log(nodePath);
+            printCoords(node);
             return;
         }
 
@@ -106,6 +107,13 @@ function createWalker(data) {
 
         for (const childNode of node.children) {
             walk(childNode, callDepth + 1, nodePath);
+        }
+    }
+
+    function printCoords(gPTSNode) {
+        for (const childNode of gPTSNode.children) {
+            var path = ' '.repeat(childNode.depth) + ' - ' + toText(childNode);
+            console.log(path);
         }
     }
 
