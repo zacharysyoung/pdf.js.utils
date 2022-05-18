@@ -94,29 +94,23 @@ function createWalker(data, root) {
         }
     }
 
-    function walk(nodesToVisit, visit, renderGPTS) {
+    function walk(nodesToVisit, visit) {
         while (nodesToVisit.length) {
             var currentNode = nodesToVisit.pop();
 
-            if (currentNode.name == 'GPTS') {
-                renderGPTS = true;
-            }
-
-            if (renderGPTS) {
-                console.log('-'.repeat(currentNode.depth) + toText(currentNode));
-            }
-
             if (currentNode.depth > 20) {
-                // console.error('Max depth exceeded.');
                 continue;
             }
+
+            console.log('-'.repeat(currentNode.depth) + toText(currentNode));
+
 
             if (isRef(currentNode.obj)) {
                 var fetched = xref.fetch(currentNode.obj);
                 currentNode = new Node(fetched, currentNode.name, currentNode.depth, currentNode.obj);
             }
             var visitChildren = visit(currentNode, function (currentNode, visit) {
-                walk(currentNode.children.reverse(), visit, renderGPTS);
+                walk(currentNode.children.reverse(), visit);
             }.bind(null, currentNode));
 
             if (visitChildren) {
@@ -126,7 +120,7 @@ function createWalker(data, root) {
     }
 
     var node = [ new Node(root, 'Trailer', 0) ];
-    walk(node, ()=> true, false);
+    walk(node, ()=> true);
 }
 
 //
@@ -163,8 +157,8 @@ function toText(node) {
     } else if (obj instanceof StreamContents) {
         description = '<contents>';
     } else {
-        console.log(obj);
-        throw new Error('Unknown obj');
+        description = JSON.stringify(obj);
+        // throw new Error('Unknown obj');
     }
 
     if (node.ref) {
